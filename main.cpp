@@ -131,6 +131,7 @@ struct sensors {
 // ****************************************************************************
 // Globals
 // ****************************************************************************
+static time_t boot_time;
 static DisplayMan display;
 static M2MClient *m2mclient;
 static NetworkInterface *net;
@@ -1052,6 +1053,36 @@ static void platform_shutdown()
 // ****************************************************************************
 // call back handlers for commandline interface
 // ****************************************************************************
+
+static void cmd_cb_uptime(vector<string> &params)
+{
+    cmd.printf("%d\n", boot_time);
+}
+
+static void cmd_cb_time(vector<string> &params)
+{
+    time_t t;
+
+    t = time(NULL);
+
+    cmd.printf("%d\n", t);
+}
+
+static void cmd_cb_initrtc(vector<string> &params)
+{
+    int64_t seconds;
+
+    /* init the Real Time Clock */
+    M2MDevice *device = M2MInterfaceFactory::create_device();
+    if (device) {
+        seconds = device->resource_value_int(M2MDevice::CurrentTime, 0);
+        set_time((uint32_t)seconds);
+        cmd.printf("success\r");
+    } else {
+        cmd.printf("failed.  please retry later\r");
+    }
+}
+
 static void print_sha256(uint8_t *sha)
 {
     for (size_t i = 0; i < 32; ++i) {
@@ -1580,6 +1611,18 @@ void init_commander(void)
             "Show KCM config parameters",
             cmd_cb_kcmls);
 
+    cmd.add("uptime",
+            "Show how long the system has been running in seconds",
+            cmd_cb_uptime);
+
+    cmd.add("time",
+            "Show the current time in seconds",
+            cmd_cb_time);
+
+    cmd.add("initrtc",
+            "Initialize the real time clock from the mbed cloud client",
+            cmd_cb_initrtc);
+
     //display the banner
     cmd.banner();
 
@@ -1739,6 +1782,8 @@ int main()
 
     /* stack size 2048 is too small for fcc_developer_flow() */
     Thread thread(osPriorityNormal, 4224);
+
+    boot_time = time(NULL);
 
     /* init the console manager so we can printf */
     init_commander();
