@@ -247,6 +247,7 @@ mbed_app.json:
 prepare: .mbed .deps update_default_resources.c .patches mbed_app.json
 	mkdir -p ${BINDIR}
 
+.PHONY: .mbed
 .mbed:
 	mbed config ROOT .
 	mbed target ${MBED_TARGET}
